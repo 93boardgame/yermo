@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I人夜店 | Introvert's Night</title>
+    <!-- 引入 FontAwesome 用於圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #121212;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --accent: #6200ea; /* 深紫 */
+            --accent-glow: #b388ff; /* 亮紫 */
+            --danger: #cf6679;
+            --success: #03dac6;
+            --font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            /* 背景微粒效果 */
+            background-image: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #000000 100%);
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px; /* 手機版型 */
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            padding-bottom: 80px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頁面切換動畫 */
+        .page { display: none; flex: 1; animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 通用元件 */
+        h1, h2, h3 { font-weight: 300; letter-spacing: 2px; text-align: center; margin: 0 0 20px 0; }
+        h1 { color: var(--accent-glow); text-shadow: 0 0 15px rgba(98, 0, 234, 0.6); margin-bottom: 40px; margin-top: 20px;}
+        h2 { font-size: 1.5rem; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--accent), #3700b3);
+            color: white;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            border-radius: 50px; /* 圓角更柔和 */
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(98, 0, 234, 0.3);
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; }
+        
+        .btn.outline { background: transparent; border: 1px solid #444; color: var(--text-muted); box-shadow: none; }
+        .btn.outline:hover { border-color: var(--text-main); color: var(--text-main); }
+        
+        .btn.staff { 
+            background: #222; 
+            border: 1px dashed #555; 
+            font-size: 14px; 
+            color: #666; 
+            box-shadow: none; 
+            margin-top: 40px;
+        }
+
+        /* 列表樣式 */
+        .list-item {
+            background: var(--card-bg);
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid #222;
+            transition: 0.3s;
+            text-align: center;
+            font-size: 18px;
+        }
+        .list-item:hover { border-color: var(--accent); background: #1e1e2d; }
+
+        /* 區域介紹卡片 */
+        .zone-card {
+            background: var(--card-bg);
+            padding: 24px;
+            margin-bottom: 25px;
+            border-radius: 16px;
+            border: 1px solid #222;
+            position: relative;
+            overflow: hidden;
+        }
+        .zone-card::before {
+            content: ''; position: absolute; top:0; left:0; width: 4px; height: 100%; background: var(--accent);
+        }
+        .zone-title { font-size: 20px; color: var(--accent-glow); margin-bottom: 12px; font-weight: bold; }
+        .zone-desc { font-size: 14px; color: #aaa; line-height: 1.8; margin-bottom: 15px; white-space: pre-wrap; }
+        
+        /* 區塊標籤 */
+        .label-block { display: block; font-size: 12px; color: var(--accent); margin-top: 8px; font-weight: bold; }
+
+        /* 座位選擇 */
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+            justify-items: center;
+        }
+        .seat {
+            width: 50px; height: 50px;
+            background: #222;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            border: 2px solid #333;
+            transition: 0.2s;
+            position: relative;
+        }
+        /* 方桌樣式 */
+        .seat.square { border-radius: 8px; }
+        
+        .seat.selected { background: var(--success); border-color: var(--success); color: #000; box-shadow: 0 0 10px rgba(3, 218, 198, 0.4); }
+        .seat.taken { background: #1a1a1a; border-color: #222; color: #333; pointer-events: none; }
+        .seat.taken::after { content: '×'; position: absolute; font-size: 20px; }
+
+        /* 菜單樣式 */
+        .menu-section-title { font-size: 14px; color: var(--accent); margin: 20px 0 10px 0; border-left: 3px solid var(--accent); padding-left: 10px; }
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            border: 1px solid #222;
+        }
+        .menu-item.sold-out { opacity: 0.4; pointer-events: none; filter: grayscale(1); position: relative; }
+        .menu-item.sold-out::after { 
+            content: '已售完'; position: absolute; right: 20px; color: var(--danger); font-weight: bold; font-size: 12px; border: 1px solid var(--danger); padding: 2px 6px; border-radius: 4px;
+        }
+
+        .menu-controls button {
+            background: #333; border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px;
+        }
+        .menu-controls span { margin: 0 12px; font-size: 16px; display: inline-block; width: 20px; text-align: center;}
+        .temp-switch {
+            font-size: 12px; margin-right: 8px;
+            background: #222; padding: 4px 10px; border-radius: 20px; cursor: pointer; color: #666; transition: 0.3s;
+        }
+        .temp-switch.active { background: var(--accent); color: white; }
+
+        /* 後台 */
+        .order-row { font-size: 13px; background: #222; margin-bottom: 10px; padding: 15px; border-radius: 8px; border-left: 3px solid #444; }
+        .order-row.done { border-left-color: var(--success); }
+        
+        /* 庫存管理按鈕 */
+        .stock-btn { 
+            padding: 5px 10px; border-radius: 4px; border: 1px solid #444; background: transparent; color: #888; font-size: 12px; cursor: pointer; margin: 2px;
+        }
+        .stock-btn.active { border-color: var(--success); color: var(--success); background: rgba(3, 218, 198, 0.1); }
+        .stock-btn.out { border-color: var(--danger); color: var(--danger); background: rgba(207, 102, 121, 0.1); text-decoration: line-through; }
+
+        /* STAFF ONLY 連結樣式 */
+        .staff-link-container {
+            margin-top: auto; /* 推到最底部 */
+            text-align: center;
+            padding: 20px;
+        }
+        .staff-link {
+            font-size: 10px;
+            color: #333;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .staff-link:hover {
+            color: #666;
+            border-color: #666;
+        }
+
+        /* Loading */
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; justify-content:center; align-items:center; z-index: 9999; display:none; flex-direction: column; }
+        .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="loading">
+    <div class="spinner"></div>
+    <div style="color: #666; font-size: 12px;">連線中...</div>
+</div>
+
+<div id="app">
+    <!-- 1. 報到頁 -->
+    <div id="p-checkin" class="page active">
+        <h1>I 人夜店<br><span style="font-size:12px; color:#666; letter-spacing: 5px;">INTROVERT'S NIGHT</span></h1>
+        <p style="text-align: center; margin-bottom: 30px; color: #888;">請選擇您的報到名稱</p>
+        <div id="user-list"></div>
+        
+        <!-- 新增的 STAFF ONLY 入口 -->
+        <div class="staff-link-container">
+            <span class="staff-link" onclick="promptAdmin()">STAFF ONLY</span>
+        </div>
+    </div>
+
+    <!-- 2. 支付頁 -->
+    <div id="p-payment" class="page">
+        <h1>支付門票</h1>
+        <div style="background: white; padding: 30px; border-radius: 16px; text-align: center; color: #333; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <p style="font-size: 14px; margin: 0 0 10px 0;">門票費用</p>
+            <p style="font-size: 40px; font-weight: bold; margin: 0; color: var(--accent);">$350</p>
+            <div style="margin: 20px 0; border-top: 1px dashed #ddd; border-bottom: 1px dashed #ddd; padding: 20px 0;">
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">請掃描 LinePay 或支付現金</p>
+                <!-- 模擬 QR Code -->
+                <div style="width: 120px; height: 120px; background: #eee; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #aaa; border-radius: 8px;">
+                    <i class="fas fa-qrcode" style="font-size: 40px;"></i>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: #888;">支付完成後請向工作人員出示此畫面</p>
+        </div>
+        <button class="btn staff" id="btn-staff-confirm">【工作人員確認】支付完成</button>
+        <button class="btn outline" style="margin-top:10px; border:none; font-size: 12px;" onclick="showPage('p-checkin')">返回重選</button>
+    </div>
+
+    <!-- 3. 區域介紹頁 -->
+    <div id="p-zones" class="page">
+        <h2>選擇您的棲息地</h2>
+        <p style="text-align: center; font-size: 12px; color: #666; margin-bottom: 30px;">探索五大區域，尋找屬於您的角落</p>
+        <div id="zone-container"></div>
+    </div>
+
+    <!-- 4. 座位選擇頁 -->
+    <div id="p-seat" class="page">
+        <h2 id="seat-zone-title">區域座位</h2>
+        <p style="text-align: center; font-size: 14px; color: var(--text-muted);">白色為空位，選取後將保留</p>
+        
+        <div class="seat-grid" id="seat-grid"></div>
+        
+        <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 30px; border: 1px solid #333;">
+            <p style="font-size: 12px; color: var(--danger); margin: 0; line-height: 1.6;">
+                <i class="fas fa-exclamation-circle"></i> 
+                若選定此位置，直到上餐完畢前，無法再更換位置。
+            </p>
+        </div>
+
+        <button class="btn" id="btn-confirm-seat" style="display: none;">確認並下一步</button>
+        <button class="btn outline" onclick="showPage('p-zones')">返回區域總覽</button>
+    </div>
+
+    <!-- 5. 點餐頁 -->
+    <div id="p-menu" class="page">
+        <h2>餐點選擇</h2>
+        <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+            規則：任選 2 杯飲品 或 1 飲 1 餐
+        </p>
+        
+        <div class="menu-section-title">飲品 Drinks</div>
+        <div id="menu-drinks"></div>
+        
+        <div class="menu-section-title">餐點 Food</div>
+        <div id="menu-foods"></div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #1a1a1a; border-radius: 12px; text-align: center; position: sticky; bottom: 20px; border: 1px solid #333; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);">
+            <p style="margin: 0 0 10px 0;">目前選擇：<span style="color:var(--success); font-weight:bold;"><span id="select-count-drink">0</span> 飲 / <span id="select-count-food">0</span> 餐</span></p>
+            <button class="btn" onclick="submitOrder()">確認送出</button>
+            <button class="btn outline" style="margin-top:10px; padding: 10px;" onclick="showPage('p-seat')">上一步</button>
+        </div>
+    </div>
+
+    <!-- 6. 完成頁 -->
+    <div id="p-done" class="page">
+        <div style="text-align: center; margin-top: 40vh; transform: translateY(-50%);">
+            <h1 style="color: var(--accent-glow); margin-bottom: 10px;">I 人夜店<br>歡迎您</h1>
+            <div style="width: 50px; height: 2px; background: var(--accent); margin: 20px auto;"></div>
+            <p style="line-height: 2; font-size: 16px;">謝謝今天的您出現在這裡<br>讓我們靜嗨一整夜吧</p>
+            <br>
+            <p style="font-size: 12px; color: #666; margin-top: 40px;">(請在座位上稍候，餐點將送至您的座位)</p>
+        </div>
+    </div>
+
+    <!-- 7. 後台管理 -->
+    <div id="p-admin" class="page">
+        <h2>後台管理</h2>
+        
+        <!-- 名單管理 -->
+        <div style="margin-bottom: 30px; padding: 20px; background: #1a1a1a; border-radius: 12px;">
+            <h3 style="font-size: 16px; margin-bottom: 10px;">報到名單設定</h3>
+            <textarea id="admin-names" placeholder="輸入名字，一行一個" style="width: 100%; height: 80px; background: #000; color: white; border: 1px solid #333; padding: 10px; box-sizing: border-box; border-radius: 4px;"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn" onclick="adminAddUsers()" style="margin:0; padding: 10px; font-size: 14px;">新增名單</button>
+                <button class="btn outline" onclick="adminClearUsers()" style="margin:0; padding: 10px; font-size: 14px; color: var(--danger); border-color: var(--danger);">重置活動</button>
+            </div>
+        </div>
+
+        <!-- 庫存管理 -->
+        <div style="margin-bottom: 30px; padding: 20px; background: #1a1a1a; border-radius: 12px;">
+            <h3 style="font-size: 16px; margin-bottom: 10px;">餐點庫存管理 (點擊切換)</h3>
+            <div id="admin-stock-list" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
+        </div>
+
+        <!-- 訂單列表 -->
+        <h3 style="font-size: 16px;">即時訂單</h3>
+        <div id="admin-orders" style="margin-bottom: 50px;"></div>
+        
+        <button class="btn outline" onclick="logoutAdmin()">登出後台</button>
+    </div>
+</div>
+
+<script type="module">
+    // --------------------------------------------------------
+    // 1. FIREBASE CONFIG 
+    // --------------------------------------------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // 🔴 請將您的 firebaseConfig 貼在這裡
+    const firebaseConfig = {
+        apiKey: "AIzaSyC856BX7Sl6iHyjDIyOwe4nh5Q1Pea-tvk",
+        authDomain: "yermo-acf82.firebaseapp.com",
+        projectId: "yermo-acf82",
+        storageBucket: "yermo-acf82.firebasestorage.app",
+        messagingSenderId: "802358752702",
+        appId: "1:802358752702:web:cf4965e4784e66cf8e35ef",
+        measurementId: "G-L962YRGCMQ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    // ⚠️ 修正：已移除未被引用的 getAnalytics(app)
+
+    // --------------------------------------------------------
+    // 2. 資料結構與全域變數
+    // --------------------------------------------------------
+    let currentUser = null;
+    let currentSeat = null;
+    let menuStatus = {}; // 儲存餐點庫存狀態
+
+    // 區域資料 (完全依照需求文字)
+    const ZONES = [
+        { 
+            id: 1, 
+            name: "第一區 - 突破自我區", 
+            seats: 8, 
+            type: "rect", // 長桌
+            desc: `狀態：你今天的能量適合交朋友嗎？那就大膽選擇這區吧！\n\n任務：桌子的中間有療癒卡，請誠心的回想自己最近的狀態，並抽取一張小卡，將內容寫在紙上，並與鄰近的人交換狀態！\n\n提醒：有時候突破是需要一點勇氣，而今天的你選擇這裡就已充滿勇氣，所以不要害怕當主動的那個人，說不定會得到意外的收穫唷！` 
+        },
+        { 
+            id: 2, 
+            name: "第二區 - 自由漂流區", 
+            seats: 8, // 圓桌6 + 邊桌2
+            type: "round", 
+            desc: `狀態：今天的能量已經耗盡了嗎？請從野陌獲得療癒的力量吧！\n\n任務：放空也好、聽音樂也行，坐累了就起來晃晃吧！整棟建築物都可以盡情探索～\n\n提醒：二樓有個神秘的門，打開後是個能夠好好呼吸的露台；三樓則是植物的家，可以四處瞧瞧！` 
+        },
+        { 
+            id: 3, 
+            name: "第三區 - 看書共存區", 
+            seats: 6, // 沙發4 + 邊桌2
+            type: "sofa", 
+            desc: `狀態：一直沒有空間好好看書？那就選一個你喜歡的位置，將書打開吧！\n\n任務：任務開始前請專心看書，我們將於22:00 邀請大家分享今天帶來的是什麼書；若不想參與可於活動前更換位置。\n\n提醒：各看各的書再彼此推薦就是最適合i人的讀書會，簡單的分享也是分享，一切活動皆採鼓勵制，請不要有壓力！` 
+        },
+        { 
+            id: 4, 
+            name: "第四區 - 工作寫字區", 
+            seats: 6, // 3個木桌 * 2
+            type: "rect", 
+            desc: `狀態：你今天的工作或讀書目標尚未達成嗎？辛苦你了！讓我們一起加油加油～\n\n任務：今日進度未完成前，請保持安靜。\n嚴禁講話及交談！\n\n提醒：若需要手機代保管服務，請找老闆！` 
+        },
+        { 
+            id: 5, 
+            name: "第五區 - 冥想占卜區", 
+            seats: 8, // 2圓桌*2 + 2方桌*2 = 8位
+            type: "mix", 
+            desc: `狀態：最近非常迷惘嗎？或者遲遲無法放鬆下來呢？戴上妳的耳機，進入神奇的世界吧！\n\n任務：老闆會將適合您的影片傳給您，請跟隨影片的內容進行今日的任務！\n\n提醒：一定要戴上你的耳機，請勿影響他人。` 
+        }
+    ];
+
+    const MENU = {
+        drinks: ["美式", "拿鐵", "可可牛奶", "黑糖鮮奶", "伯爵茶", "洋甘菊茶(僅熱)"],
+        foods: ["細薯條", "肉桂捲", "提拉米蘇"]
+    };
+
+    // --------------------------------------------------------
+    // 3. 頁面邏輯
+    // --------------------------------------------------------
+    
+    // 初始化：監聽報到名單
+    const usersRef = ref(db, 'users');
+    onValue(usersRef, (snapshot) => {
+        const users = snapshot.val() || {};
+        const listDiv = document.getElementById('user-list');
+        listDiv.innerHTML = '';
+        
+        const sortedNames = Object.keys(users).sort();
+        
+        if (sortedNames.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:#444;">(目前無待報到名單，請稍候)</p>';
+            return;
+        }
+
+        sortedNames.forEach(name => {
+            const status = users[name].status || 'waiting'; // waiting, paid, done
+            if (status === 'waiting') {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.textContent = name;
+                div.onclick = () => selectUser(name);
+                listDiv.appendChild(div);
+            }
+        });
+    });
+
+    // 監聽庫存狀態
+    onValue(ref(db, 'menu_status'), (snapshot) => {
+        menuStatus = snapshot.val() || {};
+        // 如果目前在菜單頁，即時更新
+        if(document.getElementById('p-menu').classList.contains('active')) {
+            renderMenu();
+        }
+        // 如果在後台，更新庫存列表
+        if(document.getElementById('p-admin').classList.contains('active')) {
+            renderAdminStock();
+        }
+    });
+
+    window.selectUser = (name) => {
+        if(!confirm(`確認您是 ${name} 嗎？`)) return;
+        currentUser = name;
+        showPage('p-payment');
+    };
+
+    // 支付頁面
+    document.getElementById('btn-staff-confirm').onclick = () => {
+        // 工作人員確認
+        update(ref(db, 'users/' + currentUser), { status: 'paid' });
+        showPage('p-zones');
+    };
+
+    // 區域顯示
+    const zoneContainer = document.getElementById('zone-container');
+    ZONES.forEach(zone => {
+        const div = document.createElement('div');
+        div.className = 'zone-card';
+        div.innerHTML = `
+            <div class="zone-title">${zone.name}</div>
+            <div class="zone-desc">${zone.desc}</div>
+            <button class="btn outline" style="margin-top:10px; padding:12px; border-radius:8px;" onclick="openZone(${zone.id})">
+                選擇此區座位 <i class="fas fa-arrow-right"></i>
+            </button>
+        `;
+        zoneContainer.appendChild(div);
+    });
+
+    window.openZone = (zoneId) => {
+        const zone = ZONES.find(z => z.id === zoneId);
+        document.getElementById('seat-zone-title').textContent = zone.name;
+        document.getElementById('btn-confirm-seat').style.display = 'none';
+        
+        // 渲染座位
+        const grid = document.getElementById('seat-grid');
+        grid.innerHTML = '';
+        
+        onValue(ref(db, 'seats'), (snapshot) => {
+            const allSeats = snapshot.val() || {};
+            grid.innerHTML = ''; 
+            
+            for(let i=1; i<=zone.seats; i++) {
+                const seatId = `${zoneId}-${i}`;
+                const btn = document.createElement('div');
+                btn.className = 'seat';
+                btn.textContent = i;
+                
+                // 第五區有圓桌有方桌的視覺區分 (前4圓, 後4方)
+                if (zoneId === 5 && i > 4) btn.classList.add('square'); 
+                else if (zone.type === 'rect') btn.classList.add('square');
+
+                if (allSeats[seatId] && allSeats[seatId].takenBy && allSeats[seatId].takenBy !== currentUser) {
+                    btn.classList.add('taken');
+                    btn.title = "已有人";
+                } else {
+                    btn.onclick = () => selectSeatTemp(seatId, btn);
+                }
+                
+                // 保持當前選擇
+                if (currentSeat === seatId) btn.classList.add('selected');
+                
+                grid.appendChild(btn);
+            }
+        }, { onlyOnce: true }); // 初次載入
+        
+        showPage('p-seat');
+    };
+
+    window.selectSeatTemp = (seatId, btnElement) => {
+        document.querySelectorAll('.seat').forEach(s => s.classList.remove('selected'));
+        btnElement.classList.add('selected');
+        currentSeat = seatId;
+        document.getElementById('btn-confirm-seat').style.display = 'block';
+    };
+
+    document.getElementById('btn-confirm-seat').onclick = async () => {
+        // 二次檢查座位
+        const seatRef = ref(db, 'seats/' + currentSeat);
+        const snapshot = await get(seatRef);
+        if (snapshot.exists() && snapshot.val().takenBy !== currentUser) {
+            alert('哎呀！剛剛有人比您快一步選了這個位置，請重選。');
+            const zoneId = parseInt(currentSeat.split('-')[0]);
+            openZone(zoneId);
+            return;
+        }
+
+        // 鎖定座位
+        await set(seatRef, { takenBy: currentUser });
+        await update(ref(db, 'users/' + currentUser), { seat: currentSeat });
+        
+        renderMenu();
+        showPage('p-menu');
+    };
+
+    // 菜單邏輯
+    let orderState = {}; 
+
+    function renderMenu() {
+        const dContainer = document.getElementById('menu-drinks');
+        const fContainer = document.getElementById('menu-foods');
+        dContainer.innerHTML = '';
+        fContainer.innerHTML = '';
+        
+        // 保留已選數量，重新渲染列表
+        const oldState = {...orderState};
+        orderState = {}; 
+
+        // 渲染飲品
+        MENU.drinks.forEach(item => {
+            // 初始化 state (如果有舊資料則沿用)
+            const isHotOnly = item.includes('僅熱');
+            if (oldState[item]) {
+                orderState[item] = oldState[item];
+            } else {
+                orderState[item] = { type: 'drink', temp: isHotOnly?'hot':'ice', count: 0 };
+            }
+
+            // 檢查完售
+            const isSoldOut = menuStatus[item] === false; // false 代表完售
+
+            const div = document.createElement('div');
+            div.className = `menu-item ${isSoldOut ? 'sold-out' : ''}`;
+            
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight:bold; font-size:16px;">${item}</div>
+                    <div style="margin-top:8px;">
+                        ${!isHotOnly ? `<span class="temp-switch ${orderState[item].temp==='ice'?'active':''}" onclick="toggleTemp('${item}', 'ice', this)">冰</span>` : ''}
+                        <span class="temp-switch ${isHotOnly||orderState[item].temp==='hot'?'active':''}" onclick="toggleTemp('${item}', 'hot', this)">熱</span>
+                    </div>
+                </div>
+                <div class="menu-controls">
+                    <button onclick="changeCount('${item}', 'drink', -1)">-</button>
+                    <span id="count-${item}">${orderState[item].count}</span>
+                    <button onclick="changeCount('${item}', 'drink', 1)">+</button>
+                </div>
+            `;
+            dContainer.appendChild(div);
+        });
+
+        // 渲染餐點
+        MENU.foods.forEach(item => {
+            if (oldState[item]) {
+                orderState[item] = oldState[item];
+            } else {
+                orderState[item] = { type: 'food', temp: null, count: 0 };
+            }
+
+            const isSoldOut = menuStatus[item] === false;
+
+            const div = document.createElement('div');
+            div.className = `menu-item ${isSoldOut ? 'sold-out' : ''}`;
+            div.innerHTML = `
+                <div style="font-weight:bold; font-size:16px;">${item}</div>
+                <div class="menu-controls">
+                    <button onclick="changeCount('${item}', 'food', -1)">-</button>
+                    <span id="count-${item}">${orderState[item].count}</span>
+                    <button onclick="changeCount('${item}', 'food', 1)">+</button>
+                </div>
+            `;
+            fContainer.appendChild(div);
+        });
+        
+        updateCartDisplay();
+    }
+
+    window.toggleTemp = (name, temp, btn) => {
+        const parent = btn.parentNode;
+        parent.querySelectorAll('.temp-switch').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        orderState[name].temp = temp;
+    };
+
+    window.changeCount = (name, type, delta) => {
+        const newState = orderState[name].count + delta;
+        if (newState < 0) return;
+        
+        // 規則檢查: 2飲 或 1飲1餐
+        // 先算目前總數 (扣除當前項目舊數量)
+        let currentDrink = 0;
+        let currentFood = 0;
+        Object.keys(orderState).forEach(key => {
+            if (key !== name) {
+                if(orderState[key].type === 'drink') currentDrink += orderState[key].count;
+                if(orderState[key].type === 'food') currentFood += orderState[key].count;
+            }
+        });
+
+        // 加入新數量預判
+        if (type === 'drink') currentDrink += newState;
+        if (type === 'food') currentFood += newState;
+
+        // 判斷
+        const total = currentDrink + currentFood;
+        
+        if (delta > 0) { // 增加時才檢查上限
+            if (total > 2) { alert('最多選擇兩項！'); return; }
+            if (currentFood > 1) { alert('餐點最多只能選一份喔！'); return; }
+            if (currentDrink === 0 && currentFood === 2) { alert('不能選兩份餐點，請搭配飲料！'); return; } 
+        }
+
+        orderState[name].count = newState;
+        document.getElementById(`count-${name}`).textContent = newState;
+        updateCartDisplay();
+    };
+
+    function updateCartDisplay() {
+        let d = 0, f = 0;
+        Object.values(orderState).forEach(o => {
+            if(o.type === 'drink') d += o.count;
+            if(o.type === 'food') f += o.count;
+        });
+        document.getElementById('select-count-drink').textContent = d;
+        document.getElementById('select-count-food').textContent = f;
+    }
+
+    window.submitOrder = async () => {
+        let d = 0, f = 0;
+        let items = [];
+        Object.keys(orderState).forEach(key => {
+            const o = orderState[key];
+            if (o.count > 0) {
+                if(o.type === 'drink') d += o.count;
+                if(o.type === 'food') f += o.count;
+                items.push({ 
+                    name: key, 
+                    count: o.count, 
+                    temp: o.temp, 
+                    type: o.type 
+                });
+            }
+        });
+
+        // 最終規則檢查
+        if ((d === 2 && f === 0) || (d === 1 && f === 1)) {
+            // 合格
+        } else {
+            alert('請選擇：兩杯飲品 或 一飲一餐'); return;
+        }
+
+        document.getElementById('loading').style.display = 'flex';
+        
+        try {
+            await set(ref(db, 'orders/' + currentUser), {
+                seat: currentSeat,
+                items: items,
+                timestamp: Date.now()
+            });
+            await update(ref(db, 'users/' + currentUser), { status: 'done' });
+            
+            document.getElementById('loading').style.display = 'none';
+            showPage('p-done');
+        } catch(e) {
+            alert("連線錯誤，請重試");
+            document.getElementById('loading').style.display = 'none';
+        }
+    };
+
+
+    // --------------------------------------------------------
+    // 4. 後台邏輯
+    // --------------------------------------------------------
+    window.promptAdmin = () => {
+        const pwd = prompt("請輸入管理員密碼");
+        if (pwd === "13491349") {
+            showPage('p-admin');
+            loadAdminData();
+            renderAdminStock();
+        } else if (pwd !== null) {
+            alert("密碼錯誤");
+        }
+    };
+
+    // [修正 1] 新增名單：增加錯誤處理與名稱過濾
+    window.adminAddUsers = async () => {
+        const text = document.getElementById('admin-names').value;
+        // 過濾空行
+        const names = text.split('\n')
+            .map(n => n.trim())
+            .filter(n => n !== '');
+        
+        if (names.length === 0) {
+            alert("請輸入至少一個名字");
+            return;
+        }
+        
+        const updates = {};
+        names.forEach(n => {
+            // 修正：Firebase Key 不能包含 . # $ [ ] / 
+            // 簡單處理：將這些符號替換為底線，避免寫入失敗
+            const safeName = n.replace(/[.#$[\]\/]/g, "_");
+            updates[safeName] = { status: 'waiting' };
+        });
+
+        try {
+            await update(ref(db, 'users'), updates);
+            alert(`成功新增 ${Object.keys(updates).length} 位名單`);
+            document.getElementById('admin-names').value = '';
+        } catch (error) {
+            console.error(error);
+            // 顯示具體錯誤，幫助排除問題 (例如 Permission Denied)
+            alert("新增失敗: " + error.message + "\n請檢查 Firebase 權限設定 (Rules)。");
+        }
+    };
+    
+    window.adminClearUsers = async () => {
+        if(confirm("警告：確定要清空所有資料嗎？\n這會刪除所有訂單、座位狀態和報到名單。")) {
+            try {
+                await set(ref(db, 'users'), null);
+                await set(ref(db, 'seats'), null);
+                await set(ref(db, 'orders'), null);
+                // menu_status 不清空，保留庫存設定
+                alert("活動已重置");
+            } catch (error) {
+                alert("重置失敗: " + error.message);
+            }
+        }
+    };
+
+    function loadAdminData() {
+        onValue(ref(db, 'orders'), (snapshot) => {
+            const orders = snapshot.val() || {};
+            const container = document.getElementById('admin-orders');
+            container.innerHTML = '';
+            
+            const orderList = Object.entries(orders).sort((a,b) => b[1].timestamp - a[1].timestamp);
+
+            if(orderList.length === 0) {
+                container.innerHTML = '<div style="color:#666; text-align:center;">尚無訂單</div>';
+                return;
+            }
+
+            orderList.forEach(([user, data]) => {
+                const div = document.createElement('div');
+                div.className = 'order-row';
+                
+                let itemStr = '';
+                data.items.forEach(i => {
+                    const tempStr = i.type==='drink' ? (i.temp==='ice'?'<span style="color:#03dac6">[冰]</span>':'<span style="color:#cf6679">[熱]</span>') : '';
+                    itemStr += `<div style="margin-left:10px; margin-top:5px;">• ${i.name} ${tempStr} x${i.count}</div>`;
+                });
+
+                // 換算時間
+                const time = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:16px; color:var(--accent-glow); font-weight:bold;">${user}</span>
+                        <span style="font-size:12px; color:#aaa;">${time}</span>
+                    </div>
+                    <div style="font-size:12px; color:#ccc; margin-bottom:5px;">座位: ${data.seat}</div>
+                    <div style="border-top:1px solid #444; padding-top:5px;">${itemStr}</div>
+                `;
+                container.appendChild(div);
+            });
+        });
+    }
+
+    // [修正 2] 庫存渲染：增加點擊錯誤處理
+    function renderAdminStock() {
+        const container = document.getElementById('admin-stock-list');
+        container.innerHTML = '';
+        
+        const allItems = [...MENU.drinks, ...MENU.foods];
+        
+        allItems.forEach(item => {
+            const isAvailable = menuStatus[item] !== false; // default true
+            const btn = document.createElement('button');
+            btn.className = `stock-btn ${isAvailable ? 'active' : 'out'}`;
+            btn.textContent = `${item} ${isAvailable ? '(販售中)' : '(完售)'}`;
+            
+            btn.onclick = async () => {
+                try {
+                    await update(ref(db, 'menu_status'), {
+                        [item]: !isAvailable
+                    });
+                } catch (error) {
+                    console.error(error);
+                    alert("更新狀態失敗: " + error.message + "\n請檢查 Firebase 權限設定 (Rules)。");
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    window.logoutAdmin = () => {
+        showPage('p-checkin');
+    }
+
+    window.showPage = (id) => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo(0,0);
+    };
+
+</script>
+</body>
+</html>
