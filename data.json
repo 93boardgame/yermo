@@ -1,0 +1,40 @@
+{
+  "users": {
+    "小吳": {
+      "status": "done",
+      "seat": "1-3"
+    }
+  },
+  "seats": {
+    "1-3": {
+      "takenBy": "小吳"
+    }
+  },
+  "orders": {
+    "小吳": {
+      "seat": "1-3",
+      "items": [
+        {
+          "name": "美式",
+          "count": 1,
+          "temp": "ice",
+          "type": "drink"
+        },
+        {
+          "name": "提拉米蘇",
+          "count": 1,
+          "temp": null,
+          "type": "food"
+        }
+      ],
+      "timestamp": 1768122385838,
+      "served": false
+    }
+  },
+  "menu_status": {
+    "可可牛奶": true,
+    "拿鐵": true,
+    "細薯條": false,
+    "肉桂捲": true
+  }
+}
